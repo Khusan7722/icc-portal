@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Index Consulting Company — ICC Portal</title>
+  <meta name="description" content="ICC — Engineering &amp; Management Consulting, Tashkent. ADB, World Bank, EBRD."/>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%230B2818'/><text y='72' x='50' text-anchor='middle' font-size='52' font-weight='900' fill='%23C9A84C' font-family='serif'>IC</text></svg>"/>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <style>*{box-sizing:border-box;margin:0;padding:0}body{overflow-x:hidden}#root{min-height:100vh}</style>
+</head>
+<body>
+  <div id="root"></div>
+  <script>
+const _jsxFileName = ""; function _optionalChain(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
+
+const { useState, useEffect, useRef } = React;
+
+
+
+// ══════════════════════════════════════════
+//  AI PORTAL — powered by Claude API
+// ══════════════════════════════════════════
+const AGENTS = [
+  { id:"tenders", icon:"📋", labelEn:"Tender Finder", labelRu:"Поиск тендеров", labelUz:"Tender qidiruv",
+    descEn:"Find relevant tenders from ADB, World Bank, EBRD, UN and other IFIs matching ICC's profile.",
+    descRu:"Найдите тендеры от АБР, ВБ, ЕБРР, ООН и других МФИ, подходящие для ICC.",
+    descUz:"ADB, Jahon banki, EBRD, BMT va boshqa XMTlardan ICC profiliga mos tenderlarni toping.",
+    systemEn:`You are the ICC Tender Intelligence Agent for Index Consulting Company (ICC), Tashkent, Uzbekistan. ICC is an engineering & management consulting firm working on ADB, World Bank, EBRD, KfW, IsDB, OPEC Fund, UN projects in energy, water supply, GIS/hydraulic modeling, environmental management, agriculture, PPP, and ESG sectors in Central Asia. Help users find relevant tenders, EOIs, and RFPs. Provide: tender title, issuing organization (ADB/WB/EBRD/UN etc.), country, sector, deadline if known, and a brief ICC fit assessment. Always mention the official procurement portal link where to find it. Be concise and professional.`,
+    systemRu:`Вы — агент ICC по тендерной разведке. ICC — инжиниринговая и управленческая консалтинговая компания (Ташкент, Узбекистан), реализующая проекты АБР, ВБ, ЕБРР, KfW, IsDB, ОПЕК в сфере энергетики, водоснабжения, ГИС, экологии, ГЧП и ESG. Помогите пользователю найти подходящие тендеры, EOI и RFP. Указывайте: название, организацию, страну, срок, ссылку на портал и краткую оценку соответствия ICC.`,
+    systemUz:`Siz ICC uchun tender razvedka agentisiz. ICC — Toshkent, O'zbekistondagi muhandislik va menejment konsalting kompaniyasi, ADB, Jahon banki, EBRD, KfW loyihalarida energetika, suv ta'minoti, GIS, ekologiya, YXH va ESG yo'nalishlarida ishlaydigan. Foydalanuvchiga tegishli tenderlar, EOI va RFPlarni topishda yordam bering.`,
+    placeholder: { en:"E.g.: water supply tenders in Central Asia, ADB energy EOIs 2025...", ru:"Напр.: водоснабжение в ЦА, энергетические тендеры АБР 2025...", uz:"Masalan: Markaziy Osiyoda suv ta'minoti tenderlari, ADB energetika EOI..." }
+  },
+  { id:"vacancies", icon:"👥", labelEn:"HR & Vacancies", labelRu:"HR и вакансии", labelUz:"HR va vakansiyalar",
+    descEn:"Get help with ICC job applications, CV tips, and interview preparation.",
+    descRu:"Помощь с откликом на вакансии ICC, советы по резюме и подготовка к интервью.",
+    descUz:"ICC ish o'rinlariga ariza berish, rezyume maslahatlari va intervyuga tayyorgarlik.",
+    systemEn:`You are the ICC HR Assistant for Index Consulting Company (ICC), Tashkent, Uzbekistan. ICC works on IFI-financed projects (ADB, World Bank, EBRD) in energy, water, GIS, environment, PPP. Current open positions: 1) Mechanical Engineer — Construction Section (15+ yrs, solar/wind, English+Russian), 2) Design Engineer — Construction Section (15+ yrs, EPC experience), 3) Chief Accountant/Financial Manager (Uzbek law bookkeeping, tax), 4) Junior International Commercial Law Attorney (commercial law, English+Russian+Uzbek). Help candidates understand requirements, improve CVs, prepare for interviews. Be encouraging and professional.`,
+    systemRu:`Вы — HR-ассистент ICC (Ташкент). Открытые вакансии: 1) Инженер-механик (15+ лет, солнечная/ветровая энергетика, англ.+рус.), 2) Инженер-проектировщик (15+ лет, EPC), 3) Главный бухгалтер/финансовый менеджер (узбекское законодательство), 4) Юрист по международному коммерческому праву (англ.+рус.+узб.). Помогайте кандидатам, давайте советы по резюме, готовьте к интервью.`,
+    systemUz:`Siz ICC HR assistentsiz (Toshkent). Ochiq lavozimlar: 1) Mexanik muhandis (15+ yil, quyosh/shamol), 2) Dizayn muhandis (15+ yil, EPC), 3) Bosh hisobchi/moliya menejeri, 4) Xalqaro tijorat huquqi bo'yicha yurist. Nomzodlarga rezyume maslahat bering, intervyuga tayyorlang.`,
+    placeholder: { en:"E.g.: How do I apply for the Mechanical Engineer role? Tips for my CV...", ru:"Напр.: Как подать заявку на инженера? Советы по резюме...", uz:"Masalan: Muhandis lavozimiga qanday ariza beraman? Rezyume maslahatlari..." }
+  },
+  { id:"company", icon:"🏢", labelEn:"Company Analyzer", labelRu:"Анализ компаний", labelUz:"Kompaniya tahlili",
+    descEn:"Analyze potential partners, clients or competitors for ICC business development.",
+    descRu:"Анализ потенциальных партнёров, клиентов или конкурентов для бизнес-развития ICC.",
+    descUz:"ICC biznes rivojlantirish uchun potentsial hamkorlar, mijozlar yoki raqiblarni tahlil qiling.",
+    systemEn:`You are the ICC Company Intelligence Agent for Index Consulting Company (ICC), Tashkent, Uzbekistan. ICC is an engineering & management consultancy working on IFI-financed projects. Help users research and analyze companies for potential partnerships, client relationships, or competitive intelligence. Provide: company overview, IFI project history, relevant sectors, potential collaboration areas, and ICC engagement strategy. Be analytical and strategic.`,
+    systemRu:`Вы — агент ICC по анализу компаний. Помогайте исследовать потенциальных партнёров, клиентов или конкурентов. Предоставляйте: обзор компании, историю проектов с МФИ, секторы, возможности сотрудничества и стратегию взаимодействия ICC.`,
+    systemUz:`Siz ICC kompaniya tahlil agentisiz. Potentsial hamkorlar, mijozlar yoki raqiblarni tadqiq qilishga yordam bering. Kompaniya sharhi, XMT loyiha tarixi, sektorlar, hamkorlik imkoniyatlari va ICC strategiyasini taqdim eting.`,
+    placeholder: { en:"E.g.: Analyze Tractebel Engineering for potential partnership on ADB projects...", ru:"Напр.: Проанализируйте Tractebel Engineering для партнёрства по проектам АБР...", uz:"Masalan: ADB loyihalari uchun Tractebel Engineering kompaniyasini tahlil qiling..." }
+  },
+];
+
+function AIPortal({go, t, lang}) {
+  const [agent, setAgent] = useState(0);
+  const [input, setInput] = useState("");
+  const [messages, setMessages] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [history, setHistory] = useState([[], [], []]);
+  const msgsRef = useRef(null);
+
+  const ag = AGENTS[agent];
+  const systemPrompt = lang==="ru" ? ag.systemRu : lang==="uz" ? ag.systemUz : ag.systemEn;
+  const ph = ag.placeholder[lang] || ag.placeholder.en;
+  const label = lang==="ru" ? ag.labelRu : lang==="uz" ? ag.labelUz : ag.labelEn;
+
+  useEffect(() => {
+    setMessages(history[agent]);
+  }, [agent]);
+
+  useEffect(() => {
+    if (msgsRef.current) msgsRef.current.scrollTop = msgsRef.current.scrollHeight;
+  }, [messages, loading]);
+
+  const switchAgent = (i) => {
+    setHistory(h => { const n=[...h]; n[agent]=[...messages]; return n; });
+    setAgent(i);
+    setMessages(history[i]);
+    setInput("");
+  };
+
+  const send = async () => {
+    if (!input.trim() || loading) return;
+    const userMsg = { role:"user", content: input.trim() };
+    const newMsgs = [...messages, userMsg];
+    setMessages(newMsgs);
+    setInput("");
+    setLoading(true);
+    try {
+      const res = await fetch("/.netlify/functions/claude", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({
+          model:"claude-sonnet-4-20250514",
+          max_tokens:1000,
+          system: systemPrompt,
+          messages: newMsgs.map(m=>({role:m.role, content:m.content}))
+        })
+      });
+      const data = await res.json();
+      const reply = _optionalChain([data, 'access', _ => _.content, 'optionalAccess', _2 => _2.map, 'call', _3 => _3(b=>b.text||""), 'access', _4 => _4.join, 'call', _5 => _5("")]) || "Sorry, no response received.";
+      const updated = [...newMsgs, {role:"assistant", content:reply}];
+      setMessages(updated);
+      setHistory(h => { const n=[...h]; n[agent]=updated; return n; });
+    } catch(e) {
+      setMessages(m=>[...m, {role:"assistant", content:"❌ Connection error. Please try again."}]);
+    }
+    setLoading(false);
+  };
+
+  const clearChat = () => {
+    setMessages([]);
+    setHistory(h => { const n=[...h]; n[agent]=[]; return n; });
+  };
+
+  return (
+    React.createElement('div', { style: {paddingTop:60,minHeight:"100vh",background:`linear-gradient(160deg,${GD} 0%,#0E2B1A 60%,#0B2818 100%)`,display:"flex",flexDirection:"column",position:"relative",overflow:"hidden"}}
+      , React.createElement('img', { src: "/images/gears.jpg", style: {position:"absolute",right:-20,bottom:0,height:"65%",opacity:0.13,pointerEvents:"none",zIndex:0,filter:"saturate(0.9)"}, alt: ""})
+      /* Header */
+      , React.createElement('div', { style: {padding:"32px 40px 0",borderBottom:"1px solid rgba(201,168,76,.1)"}}
+        , React.createElement('div', { style: {display:"flex",alignItems:"center",gap:10,marginBottom:8}}, React.createElement('div', { style: {width:24,height:1,background:G}}), React.createElement('span', { style: {fontSize:9,letterSpacing:".14em",textTransform:"uppercase",color:G,fontWeight:600}}, "AI Agent Portal · ICC"    ))
+        , React.createElement('h1', { style: {fontFamily:"'Playfair Display',serif",fontSize:"clamp(22px,3vw,38px)",color:"white",marginBottom:6}}, "AI " , React.createElement('span', { style: {color:G,fontStyle:"italic"}}, "Agents"))
+        , React.createElement('p', { style: {fontSize:11,color:"rgba(255,255,255,.4)",maxWidth:500,lineHeight:1.65,marginBottom:20}}, "Powered by Claude AI — real-time assistance for tenders, HR, and business development."            )
+        /* Agent tabs */
+        , React.createElement('div', { style: {display:"flex",gap:0,borderBottom:"1px solid rgba(201,168,76,.1)"}}
+          , AGENTS.map((ag,i)=>{
+            const lbl = lang==="ru"?ag.labelRu:lang==="uz"?ag.labelUz:ag.labelEn;
+            const active = agent===i;
+            return (
+              React.createElement('button', { key: i, onClick: ()=>switchAgent(i), style: {padding:"10px 18px",background:"none",border:"none",borderBottom:active?`2px solid ${G}`:"2px solid transparent",color:active?G:"rgba(255,255,255,.4)",fontSize:11,fontWeight:active?700:400,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",display:"flex",alignItems:"center",gap:6,transition:"all .2s",marginBottom:-1}}
+                , React.createElement('span', {__self: this, __source: {fileName: _jsxFileName, lineNumber: 118}}, ag.icon), lbl
+                , history[i].length>0&&React.createElement('span', { style: {width:5,height:5,borderRadius:"50%",background:G,flexShrink:0}})
+              )
+            );
+          })
+          , React.createElement('div', { style: {flex:1}})
+          , React.createElement('button', { onClick: ()=>go("home"), style: {padding:"10px 16px",background:"none",border:"none",color:"rgba(255,255,255,.3)",fontSize:10,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}, "← Home" )
+        )
+      )
+
+      /* Agent description */
+      , React.createElement('div', { style: {padding:"14px 40px",background:"rgba(201,168,76,.04)",borderBottom:"1px solid rgba(201,168,76,.07)"}}
+        , React.createElement('div', { style: {fontSize:11,color:"rgba(255,255,255,.5)"}}, lang==="ru"?ag.descRu:lang==="uz"?ag.descUz:ag.descEn)
+      )
+
+      /* Messages */
+      , React.createElement('div', { ref: msgsRef, style: {flex:1,overflowY:"auto",padding:"20px 40px",display:"flex",flexDirection:"column",gap:12,minHeight:300,maxHeight:"calc(100vh - 340px)"}}
+        , messages.length===0&&(
+          React.createElement('div', { style: {display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"100%",gap:10,opacity:.5,paddingTop:40}}
+            , React.createElement('div', { style: {fontSize:40}}, ag.icon)
+            , React.createElement('div', { style: {fontFamily:"'Playfair Display',serif",fontSize:16,color:"white",textAlign:"center"}}, label)
+            , React.createElement('div', { style: {fontSize:11,color:"rgba(255,255,255,.4)",maxWidth:320,textAlign:"center",lineHeight:1.65}}, lang==="ru"?ag.descRu:lang==="uz"?ag.descUz:ag.descEn)
+          )
+        )
+        , messages.map((m,i)=>(
+          React.createElement('div', { key: i, style: {display:"flex",justifyContent:m.role==="user"?"flex-end":"flex-start"}}
+            , m.role==="assistant"&&React.createElement('div', { style: {width:24,height:24,borderRadius:"50%",background:`${G}22`,border:`1px solid ${G}44`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,flexShrink:0,marginRight:8,marginTop:2}}, "🤖")
+            , React.createElement('div', { style: {maxWidth:"80%",padding:"10px 14px",borderRadius:m.role==="user"?"12px 12px 2px 12px":"12px 12px 12px 2px",background:m.role==="user"?G:"rgba(255,255,255,.07)",color:m.role==="user"?GD:"rgba(255,255,255,.88)",fontSize:12,lineHeight:1.7,whiteSpace:"pre-wrap",fontFamily:"'DM Sans',sans-serif",border:m.role==="assistant"?"1px solid rgba(255,255,255,.08)":"none"}}
+              , m.role==="assistant"?React.createElement(MdText, { text: m.content}):m.content
+            )
+          )
+        ))
+        , loading&&(
+          React.createElement('div', { style: {display:"flex",gap:8,alignItems:"center"}}
+            , React.createElement('div', { style: {width:24,height:24,borderRadius:"50%",background:`${G}22`,border:`1px solid ${G}44`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11}}, "🤖")
+            , React.createElement('div', { style: {padding:"10px 16px",background:"rgba(255,255,255,.07)",borderRadius:"12px 12px 12px 2px",display:"flex",gap:5,alignItems:"center"}}
+              , [0,1,2].map(j=>React.createElement('div', { key: j, style: {width:5,height:5,borderRadius:"50%",background:G,animation:`pulse ${.6+j*.15}s ease-in-out infinite alternate`}}))
+            )
+          )
+        )
+      )
+
+      /* Input */
+      , React.createElement('div', { style: {padding:"16px 40px 24px",borderTop:"1px solid rgba(201,168,76,.1)"}}
+        , messages.length>0&&React.createElement('button', { onClick: clearChat, style: {fontSize:9,color:"rgba(255,255,255,.2)",background:"none",border:"none",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",marginBottom:8,padding:0,textTransform:"uppercase",letterSpacing:".08em"}}, "✕ Clear chat"  )
+        , React.createElement('div', { style: {display:"flex",gap:9,alignItems:"flex-end"}}
+          , React.createElement('textarea', {
+            value: input, onChange: e=>setInput(e.target.value),
+            onKeyDown: e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();}},
+            placeholder: ph, rows: 2,
+            style: {flex:1,background:"rgba(255,255,255,.06)",border:`1px solid ${input.trim()?"rgba(201,168,76,.4)":"rgba(255,255,255,.1)"}`,borderRadius:10,padding:"10px 14px",color:"white",fontSize:12,fontFamily:"'DM Sans',sans-serif",resize:"none",outline:"none",lineHeight:1.5,transition:"border-color .2s"}})
+          , React.createElement('button', { onClick: send, disabled: !input.trim()||loading,
+            style: {padding:"10px 18px",background:input.trim()&&!loading?G:"rgba(201,168,76,.2)",color:input.trim()&&!loading?GD:"rgba(255,255,255,.2)",border:"none",borderRadius:10,fontSize:12,fontWeight:700,cursor:input.trim()&&!loading?"pointer":"default",fontFamily:"'DM Sans',sans-serif",transition:"all .2s",height:44,flexShrink:0,whiteSpace:"nowrap"}}
+            , loading?"...":"Send →"
+          )
+        )
+        , React.createElement('div', { style: {fontSize:9,color:"rgba(255,255,255,.18)",marginTop:7,textAlign:"center"}}, "Powered by Claude AI · Enter to send · Shift+Enter for new line"            )
+      )
+    )
+  );
+}
+
+const G="#C9A84C", GD="#0B2818", GL="#F5EDD6", GB="#F0EDE6";
+
+const T={en:{nav_home:"Home",nav_about:"About Us",nav_services:"Services",nav_projects:"Projects",nav_vacancies:"Vacancies",nav_contact:"Contact",nav_tenders:"Tenders",nav_ai:"AI ✦",hero_h1a:"Index Consulting",hero_h1b:"Company",hero_sub:"ICC implements projects financed by ADB, World Bank, EBRD, KfW and OPEC Fund — energy, water, environment, PPP and ESG across Uzbekistan and Central Asia.",hero_btn1:"View Projects",hero_btn2:"AI Portal ✦",hero_btn3:"Contact",stat_years:"Years",stat_proj:"Active Projects",stat_ifis:"IFI Partners",stat_svc:"Service Areas",svc_h:"Our Services",svc_badge:"What We Do",proj_h:"Projects",proj_badge:"Track Record",status_active:"Active",status_done:"Completed",vac_h:"Open Positions",vac_badge:"Join Our Team",vac_cta:"View & Apply →",contact_h:"Contact Us",contact_badge:"Get In Touch",about_badge:"About Us",tenders_badge:"Consulting Competitions",tenders_h:"Global Tender Monitor",tenders_sub:"AI-powered search for RFPs and EOIs from ADB, World Bank, EBRD and other IFIs.",mission_label:"Our Mission",footer_copy:"Index Consulting Company (ICC) · Est. 2018 · Tashkent",svc_names:["Energy","Water Supply","GIS & Hydraulic","Environmental","Agriculture","Market Research","PPP","Corporate","Business Advisory","ESG"]},ru:{nav_home:"Главная",nav_about:"О нас",nav_services:"Услуги",nav_projects:"Проекты",nav_vacancies:"Вакансии",nav_contact:"Контакты",nav_tenders:"Тендеры",nav_ai:"ИИ ✦",hero_h1a:"Index Consulting",hero_h1b:"Company",hero_sub:"ICC реализует проекты при финансировании АБР, Всемирного банка, ЕБРР, KfW и Фонда ОПЕК — энергетика, водоснабжение, экология, ГЧП и ESG по всей Центральной Азии.",hero_btn1:"Смотреть проекты",hero_btn2:"ИИ Портал ✦",hero_btn3:"Связаться",stat_years:"Лет",stat_proj:"Активных проектов",stat_ifis:"Партнёров МФИ",stat_svc:"Направлений",svc_h:"Наши услуги",svc_badge:"Что мы делаем",proj_h:"Проекты",proj_badge:"Портфолио",status_active:"Активный",status_done:"Завершён",vac_h:"Открытые позиции",vac_badge:"Присоединяйтесь",vac_cta:"Смотреть →",contact_h:"Контакты",contact_badge:"Свяжитесь с нами",about_badge:"О нас",tenders_badge:"Консалтинговые конкурсы",tenders_h:"Монитор тендеров",tenders_sub:"ИИ-поиск тендеров, EOI и RFP от АБР, ВБ, ЕБРР и других МФИ.",mission_label:"Наша миссия",footer_copy:"Index Consulting Company (ICC) · Осн. 2018 · Ташкент",svc_names:["Энергетика","Водоснабжение","ГИС и гидравлика","Экол. менеджмент","С/х","Маркетинг","ГЧП","Корпоративная","Бизнес","ESG"]},uz:{nav_home:"Bosh sahifa",nav_about:"Biz haqimizda",nav_services:"Xizmatlar",nav_projects:"Loyihalar",nav_vacancies:"Vakansiyalar",nav_contact:"Aloqa",nav_tenders:"Tenderlar",nav_ai:"AI ✦",hero_h1a:"Index Consulting",hero_h1b:"Company",hero_sub:"ICC ADB, Jahon banki, EBRD, KfW va OPEC Fund tomonidan moliyalashtiriladigan loyihalarni amalga oshiradi.",hero_btn1:"Loyihalarni ko'rish",hero_btn2:"AI Portal ✦",hero_btn3:"Bog'lanish",stat_years:"Yil",stat_proj:"Faol loyiha",stat_ifis:"XMT hamkorlari",stat_svc:"Yo'nalishlar",svc_h:"Xizmatlarimiz",svc_badge:"Biz nima qilamiz",proj_h:"Loyihalar",proj_badge:"Portfel",status_active:"Faol",status_done:"Tugallangan",vac_h:"Ochiq lavozimlar",vac_badge:"Jamoamizga qo'shiling",vac_cta:"Ko'rish →",contact_h:"Aloqa",contact_badge:"Bog'laning",about_badge:"Biz haqimizda",tenders_badge:"Konsalting tanlovlari",tenders_h:"Tender Monitoru",tenders_sub:"ADB, Jahon banki, EBRD va boshqa XMTlardan RFP va EOI uchun AI-qidiruv.",mission_label:"Bizning missiyamiz",footer_copy:"Index Consulting Company (ICC) · 2018-yildan · Toshkent",svc_names:["Energetika","Suv ta'minoti","GIS","Ekologiya","Qishloq xo'jaligi","Marketing","YXH","Korporativ","Biznes","ESG"]}};
+const L={en:{flag:"🇬🇧",n:"English"},ru:{flag:"🇷🇺",n:"Русский"},uz:{flag:"🇺🇿",n:"O'zbek"}};
+const ICONS=["⚡","💧","🗺️","🌿","🌾","📊","🤝","🔄","💼","🌍"];
+const DESCS=["Power generation, transmission & distribution, renewables (solar, wind, hydro). Construction supervision for ADB, EBRD, World Bank energy projects.","Technical supervision for water supply and sewerage systems. Active projects in Namangan, Samarkand, Khorezm financed by EBRD and ADB.","GIS mapping and hydraulic modeling of water and sewage systems. Completed for Urgench, Khiva, Pitnak (EBRD).","ESMF, ESMP, LMP, SEP preparation and public consultations for World Bank and EBRD projects. Full lifecycle environmental monitoring.","Agricultural consulting, irrigation advisory, feasibility studies. Active: Climate-Resilient Water in Amu Darya Basin (ADB).","Analytical studies, market assessments and competitive landscape analysis for associations, businesses and government bodies.","PPP structuring and advisory. Key success: Samarkand electricity distribution PPP with AKSA Enerji (Turkey), Nov 2025.","Organizational restructuring, process optimization, and management consulting for public and private sector organizations.","Strategic planning, financial management and operations improvement for businesses across Uzbekistan.","ESG consulting for organizations requiring IFI ESG compliance and sustainability reporting."];
+const LINKS=["https://inconsult.uz/energy","https://inconsult.uz/water-supply-sewerage-sanitation","https://inconsult.uz/projects-by-sector","https://inconsult.uz/projects-by-sector","https://inconsult.uz/projects-by-sector","https://inconsult.uz/projects-by-sector","https://inconsult.uz/news/view/uzbekistan-mobilizes-private-capital-through-ppp-roundtable","https://inconsult.uz/about-us","https://inconsult.uz/about-us","https://inconsult.uz/about-us"];
+const PROJECTS=[{funder:"EBRD",icon:"💧",status:"active",year:"2023–26",tag:"Water",title:"Water Supply & Sewerage — Namangan",desc:"Site inspections and monitoring for NWP-3.1 Central Lab, NWP-10 Water conduit reconstruction, NWP-12 Hypochlorite plant. Latest field visit: December 2025.",country:"Namangan Region, Uzbekistan",photo:"https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?w=600&q=80"},{funder:"World Bank",icon:"🔥",status:"active",year:"2023–26",tag:"Energy",title:"Energy Efficiency — Andijan, Chirchik, Bukhara, Samarkand",desc:"Social and environmental monitoring for district heating network rehabilitation, boiler house construction and IHS installation.",country:"Multi-city, Uzbekistan",photo:"https://images.unsplash.com/photo-1497435334941-8c899ee9e8e9?w=600&q=80"},{funder:"EBRD",icon:"⚡",status:"active",year:"2025–26",tag:"Energy",title:"Surkhandarya Gas Turbine — 1,600 MW Construction Supervision",desc:"Working visit January 2026. Meetings with customer and EPC contractor for the 1,600 MW GTPP construction project.",country:"Surkhandarya, Uzbekistan",photo:"https://images.unsplash.com/photo-1548337138-e87d889cc369?w=600&q=80"},{funder:"ADB",icon:"🌊",status:"active",year:"2025–26",tag:"Water",title:"Climate-Resilient Water — Amu Darya Basin",desc:"Field mission November 2025 — Kashkadarya and Surkhandarya regions. ADB-supported climate-resilient water infrastructure.",country:"Kashkadarya & Surkhandarya",photo:"https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=600&q=80"},{funder:"PPP/IFC",icon:"🤝",status:"done",year:"2024–25",tag:"PPP",title:"Samarkand Electricity Distribution PPP — AKSA Enerji",desc:"ICC and MRC Turkey acted as Technical Consultants. Contract awarded at III PPP Roundtable, November 2025, Tashkent.",country:"Samarkand, Uzbekistan",photo:"https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=600&q=80"},{funder:"EBRD",icon:"🗺️",status:"done",year:"2023",tag:"GIS",title:"GIS & Hydraulic Modeling — Urgench, Khiva, Pitnak",desc:"GIS mapping and hydraulic modeling of sewage systems for three cities in Khorezm province under EBRD financing.",country:"Khorezm, Uzbekistan",photo:"https://images.unsplash.com/photo-1565008447742-97f6f38c985c?w=600&q=80"}];
+const VACANCIES=[{title:"Mechanical Engineer — Construction Section",reqs:["B.S. Mechanical Engineering, 15+ yrs","Solar/wind farm expertise","English & Russian required"]},{title:"Design Engineer — Construction Section",reqs:["Engineering degree, 15+ yrs","EPC contractor experience","Solar/wind preferred"]},{title:"Chief Accountant / Financial Manager",reqs:["Bookkeeping per Uzbek law","Tax reporting & compliance","Financial analysis"]},{title:"Junior International Commercial Law Attorney",reqs:["Law degree, commercial focus","English & Russian required","Uzbek mandatory"]}];
+const FC={EBRD:"#003f87",ADB:"#e31837","World Bank":"#009688","PPP/IFC":"#006747"};
+const ABOUT_PHOTOS=["https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=900&q=80","https://images.unsplash.com/photo-1581092921461-eab62e97a780?w=900&q=80","https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=900&q=80"];
+const SVC_PHOTOS=[
+  "https://images.unsplash.com/photo-1466611653911-95081537e5b7?w=400&q=80", // energy/solar
+  "https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?w=400&q=80", // water pipes
+  "https://images.unsplash.com/photo-1508444845599-5c89863b1c44?w=400&q=80", // GIS/maps
+  "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=400&q=80", // environment/nature
+  "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=400&q=80", // agriculture
+  "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&q=80", // market research/analytics
+  "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=400&q=80", // PPP/business meeting
+  "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80", // corporate/team
+  "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=400&q=80", // business advisory
+  "https://images.unsplash.com/photo-1518134346374-184f9d21cea2?w=400&q=80", // ESG/sustainability
+];
+
+const css=`
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{overflow-x:hidden;scroll-behavior:smooth}
+  @keyframes fu{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes fl{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+  .hg:hover{opacity:1!important;color:#C9A84C!important}
+  .card{transition:all .3s}
+  .card:hover{transform:translateY(-4px);box-shadow:0 20px 50px rgba(10,22,40,.12)!important}
+  .ov{position:fixed;inset:0;background:rgba(10,22,40,.7);backdrop-filter:blur(8px);z-index:2000;display:flex;align-items:center;justify-content:center;padding:16px;animation:fu .2s ease}
+  .mb{background:white;border-radius:16px;width:100%;max-height:92vh;overflow-y:auto;box-shadow:0 40px 100px rgba(10,22,40,.3)}
+  ::selection{background:rgba(201,168,76,.25)}
+  @media(max-width:780px){.g2{grid-template-columns:1fr!important}.g5{grid-template-columns:1fr 1fr!important}}
+`;
+
+
+
+function MdText({text}) {
+  const inline = (s) => s.split(/(\*\*[^*]+\*\*|https?:\/\/\S+)/g).map((p,j)=>{
+    if(/^\*\*.*\*\*$/.test(p)) return React.createElement('strong', { key: j, style: {color:"white",fontWeight:700}}, p.slice(2,-2));
+    if(/^https?:\/\//.test(p)) return React.createElement('a', { key: j, href: p, target: "_blank", style: {color:"#C9A84C",wordBreak:"break-all",textDecoration:"underline"}}, p);
+    return p;
+  });
+  return (
+    React.createElement('div', { style: {fontSize:12,lineHeight:1.75}}
+      , text.split("\n").map((line,i)=>{
+        if(/^### /.test(line)) return React.createElement('div', { key: i, style: {fontWeight:700,fontSize:13,color:"white",marginTop:10,marginBottom:2}}, inline(line.slice(4)));
+        if(/^## /.test(line)) return React.createElement('div', { key: i, style: {fontWeight:700,fontSize:14,color:"white",marginTop:12,marginBottom:4,borderBottom:"1px solid rgba(255,255,255,.1)",paddingBottom:3}}, inline(line.slice(3)));
+        if(/^# /.test(line)) return React.createElement('div', { key: i, style: {fontWeight:700,fontSize:15,color:"white",marginTop:14}}, inline(line.slice(2)));
+        if(/^[-*] /.test(line)) return React.createElement('div', { key: i, style: {display:"flex",gap:7,marginTop:3}}, React.createElement('span', { style: {color:"#C9A84C",flexShrink:0}}, "•"), React.createElement('span', { style: {color:"rgba(255,255,255,.88)"}}, inline(line.slice(2))));
+        if(/^\d+\. /.test(line)){const n=line.match(/^(\d+)\./)[1];return React.createElement('div', { key: i, style: {display:"flex",gap:7,marginTop:3}}, React.createElement('span', { style: {color:"#C9A84C",fontWeight:700,minWidth:14,flexShrink:0}}, n, "."), React.createElement('span', { style: {color:"rgba(255,255,255,.88)"}}, inline(line.replace(/^\d+\. /,""))));}
+        if(/^---+$/.test(line.trim())) return React.createElement('hr', { key: i, style: {border:"none",borderTop:"1px solid rgba(255,255,255,.1)",margin:"7px 0"}});
+        if(line.trim()==="") return React.createElement('div', { key: i, style: {height:5}});
+        return React.createElement('div', { key: i, style: {color:"rgba(255,255,255,.85)"}}, inline(line));
+      })
+    )
+  );
+}
+
+function App() {
+  const [lang,setLang]=useState("en");
+  const [lo,setLo]=useState(false);
+  const [view,setView]=useState("home");
+  const [sc,setSc]=useState(false);
+  const [vv,setVv]=useState({});
+  const [vm,setVm]=useState(null);
+  const [cf,setCf]=useState({name:"",email:"",phone:"",msg:""});
+  const [cs,setCs]=useState("form");
+  const [cm,setCm]=useState(false);
+  const [sm,setSm]=useState(null);
+  const [pm,setPm]=useState(null);
+  const t=T[lang]||T.en;
+  useEffect(()=>{const h=()=>setSc(window.scrollY>40);window.addEventListener("scroll",h);return()=>window.removeEventListener("scroll",h);},[]);
+  useEffect(()=>{const h=e=>{if(!e.target.closest(".lw"))setLo(false);};document.addEventListener("click",h);return()=>document.removeEventListener("click",h);},[]);
+  useEffect(()=>{const h=e=>{if(e.key==="Escape"){setVm(null);setCm(false);setSm(null);setPm(null);}};document.addEventListener("keydown",h);return()=>document.removeEventListener("keydown",h);},[]);
+  const go=v=>{setView(v);window.scrollTo(0,0);};
+  const scr=id=>_optionalChain([document, 'access', _6 => _6.getElementById, 'call', _7 => _7(id), 'optionalAccess', _8 => _8.scrollIntoView, 'call', _9 => _9({behavior:"smooth"})]);
+  const openV=(v,i)=>{const k=`v${i}`;setVv(p=>({...p,[k]:(p[k]||0)+1}));setVm({...v,key:k});setCs("form");setCf({name:"",email:"",phone:"",msg:""});};
+
+  const Nav=()=>(
+    React.createElement('nav', { style: {position:"fixed",top:0,left:0,right:0,zIndex:1000,display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 20px",height:60,background:sc?"rgba(250,250,248,.97)":"rgba(250,250,248,.88)",backdropFilter:"blur(16px)",borderBottom:`1px solid ${sc?"rgba(201,168,76,.2)":"rgba(201,168,76,.08)"}`,transition:"all .3s"}}
+      , React.createElement('div', { onClick: ()=>go("home"), style: {display:"flex",alignItems:"center",gap:7,cursor:"pointer",flexShrink:0}}
+        , React.createElement('div', { style: {width:28,height:28,background:GD,borderRadius:6,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,fontSize:8,color:G,letterSpacing:"-.5px"}}, "ICC")
+        , React.createElement('div', {__self: this, __source: {fileName: _jsxFileName, lineNumber: 266}}, React.createElement('div', { style: {fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:700,color:GD}}, "Index " , React.createElement('span', { style: {color:G}}, "Consulting")), React.createElement('div', { style: {fontSize:9,color:"#9CA3AF"}}, "Company"))
+      )
+      , React.createElement('div', { style: {display:"flex",gap:10,alignItems:"center",flexWrap:"wrap"}}
+        , ["home","about","services","projects","vacancies","contact"].map((id,i)=>{
+          const labels=[t.nav_home,t.nav_about,t.nav_services,t.nav_projects,t.nav_vacancies,t.nav_contact];
+          return React.createElement('button', { key: id, className: "hg", onClick: ()=>{if(id==="home"||id==="about"){go(id);}else if(view!=="home"){go("home");setTimeout(function(){var el=document.getElementById(id);if(el)el.scrollIntoView({behavior:"smooth"});},400);}else{scr(id);}}, style: {fontSize:9,letterSpacing:".06em",textTransform:"uppercase",color:GD,opacity:.5,cursor:"pointer",background:"none",border:"none",fontFamily:"'DM Sans',sans-serif",padding:0}}, labels[i]);
+        })
+        , React.createElement('button', { onClick: ()=>go("tenders"), className: "hg", style: {fontSize:9,letterSpacing:".06em",textTransform:"uppercase",color:GD,opacity:.5,cursor:"pointer",background:"none",border:"none",fontFamily:"'DM Sans',sans-serif",padding:0}}, t.nav_tenders)
+        , React.createElement('button', { className: "hg", onClick: ()=>{if(view!=="home"){go("home");setTimeout(()=>{var el=document.getElementById("vacancies");if(el)el.scrollIntoView({behavior:"smooth"});},400);}else{scr("vacancies");}}, style: {fontSize:9,letterSpacing:".06em",textTransform:"uppercase",color:GD,opacity:.5,cursor:"pointer",background:"none",border:"none",fontFamily:"'DM Sans',sans-serif",padding:0}}, "Analytics")
+        , React.createElement('button', { className: "hg", onClick: ()=>go("tenders"), style: {fontSize:9,letterSpacing:".06em",textTransform:"uppercase",color:GD,opacity:.5,cursor:"pointer",background:"none",border:"none",fontFamily:"'DM Sans',sans-serif",padding:0}}, t.nav_tenders)
+        , React.createElement('button', { onClick: ()=>go("portal"), style: {fontSize:9,letterSpacing:".06em",textTransform:"uppercase",color:G,cursor:"pointer",background:"none",border:"none",fontFamily:"'DM Sans',sans-serif",fontWeight:700,padding:0}}, t.nav_ai)
+      )
+      , React.createElement('div', { style: {display:"flex",gap:6,alignItems:"center",flexShrink:0}}
+        , React.createElement('div', { className: "lw", style: {position:"relative"}}
+          , React.createElement('button', { onClick: ()=>setLo(o=>!o), style: {display:"flex",alignItems:"center",gap:4,padding:"4px 9px",border:"1px solid rgba(201,168,76,.3)",borderRadius:16,background:"none",color:GD,fontSize:10,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}
+            , L[lang].flag, " " , L[lang].n.split(" ")[0], " " , React.createElement('span', { style: {fontSize:8,opacity:.5}}, "▾")
+          )
+          , lo&&React.createElement('div', { style: {position:"absolute",top:"calc(100% + 5px)",right:0,background:"white",border:"1px solid rgba(201,168,76,.2)",borderRadius:9,overflow:"hidden",minWidth:120,boxShadow:"0 16px 40px rgba(11,40,24,.12)",zIndex:500}}
+            , Object.entries(L).map(([c,l])=>(
+              React.createElement('div', { key: c, onClick: ()=>{setLang(c);setLo(false);}, style: {padding:"7px 11px",fontSize:11,display:"flex",alignItems:"center",gap:7,cursor:"pointer",background:lang===c?GL:"white",color:lang===c?G:GD,fontWeight:lang===c?"600":"400"}}
+                , l.flag, " " , l.n
+              )
+            ))
+          )
+        )
+        , React.createElement('a', { href: "https://t.me/indexconsulting", target: "_blank", style: {display:"flex",alignItems:"center",gap:4,padding:"6px 11px",background:GD,color:"white",borderRadius:16,fontSize:10,fontWeight:500,textDecoration:"none"}}, "✈️ TG" )
+      )
+    )
+  );
+
+  return (
+    React.createElement('div', { style: {minHeight:"100vh",background:"#FAFAF8",fontFamily:"'DM Sans',sans-serif",color:GD}}
+      , React.createElement('style', {__self: this, __source: {fileName: _jsxFileName, lineNumber: 298}}, css)
+      , React.createElement('link', { href: "https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=DM+Sans:wght@400;500;600;700&display=swap", rel: "stylesheet"})
+      , React.createElement(Nav, {__self: this, __source: {fileName: _jsxFileName, lineNumber: 300}})
+
+      /* ── HOME ── */
+      , view==="home"&&React.createElement(React.Fragment, null
+        /* HERO */
+        , React.createElement('section', { style: {minHeight:"100vh",display:"flex",flexDirection:"column",justifyContent:"center",padding:"110px 40px 70px",position:"relative",overflow:"hidden",background:`linear-gradient(135deg,#FAFAF8 0%,${GB} 55%,${GL} 100%)`}}
+          , React.createElement('div', { style: {position:"absolute",inset:0,backgroundImage:`linear-gradient(rgba(201,168,76,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(201,168,76,.05) 1px,transparent 1px)`,backgroundSize:"52px 52px"}})
+          , React.createElement('div', { style: {position:"absolute",right:0,top:0,width:"52%",height:"100%",overflow:"hidden",zIndex:0}}
+            , React.createElement('div', { style: {position:"absolute",left:0,top:0,bottom:0,width:"200px",background:"linear-gradient(to right,#FAFAF8 30%,transparent)",zIndex:2}})
+            , React.createElement('img', { src: "/images/hero_obj.jpg", alt: "",
+              style: {width:"100%",height:"100%",objectFit:"cover",objectPosition:"center top"}})
+          )
+          , React.createElement('div', { style: {position:"relative",zIndex:1,maxWidth:500,animation:"fu .7s ease"}}
+            , React.createElement('div', { style: {display:"flex",alignItems:"center",gap:9,marginBottom:12}}, React.createElement('div', { style: {width:24,height:1,background:G}}), React.createElement('span', { style: {fontSize:9,letterSpacing:".14em",textTransform:"uppercase",color:G,fontWeight:600}}, "Est. 2018 · Tashkent, Uzbekistan · "      , L[lang].flag))
+            , React.createElement('h1', { style: {fontFamily:"'Playfair Display',serif",fontSize:"clamp(30px,5vw,62px)",fontWeight:700,lineHeight:1.05,color:GD,marginBottom:4}}, t.hero_h1a)
+            , React.createElement('h1', { style: {fontFamily:"'Playfair Display',serif",fontSize:"clamp(30px,5vw,62px)",fontWeight:400,lineHeight:1.05,color:G,fontStyle:"italic",marginBottom:20}}, t.hero_h1b)
+            , React.createElement('p', { style: {fontSize:"clamp(12px,1.4vw,15px)",lineHeight:1.8,color:"rgba(11,40,24,.6)",maxWidth:520,marginBottom:28}}, t.hero_sub)
+            , React.createElement('div', { style: {display:"flex",gap:9,flexWrap:"wrap"}}
+              , [[t.hero_btn1,()=>scr("projects"),GD,"white",GD],[t.hero_btn2,()=>go("portal"),"none",GD,GD],[t.hero_btn3,()=>setCm(true),"none",GD,"rgba(201,168,76,.4)"]].map(([label,fn,bg,col,brd],i)=>(
+                React.createElement('button', { key: i, onClick: fn, style: {padding:"11px 22px",background:i===0?GD:"none",color:i===0?"white":GD,border:i===0?"none":`1.5px solid ${brd}`,borderRadius:7,fontSize:12,fontWeight:i===0?600:500,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",transition:"all .3s"},
+                  onMouseEnter: e=>{if(i===0){e.currentTarget.style.background=G;e.currentTarget.style.color=GD;}else{e.currentTarget.style.borderColor=G;e.currentTarget.style.color=G;}},
+                  onMouseLeave: e=>{if(i===0){e.currentTarget.style.background=GD;e.currentTarget.style.color="white";}else{e.currentTarget.style.borderColor=i===1?GD:"rgba(201,168,76,.4)";e.currentTarget.style.color=GD;}}}
+                  , label
+                )
+              ))
+            )
+            , React.createElement('div', { style: {display:"flex",gap:24,marginTop:44,flexWrap:"wrap"}}
+              , [["7+",t.stat_years],["10+",t.stat_proj],["11+",t.stat_ifis],["10",t.stat_svc]].map(([n,l],i)=>(
+                React.createElement('div', { key: i, style: {textAlign:"center"}}
+                  , React.createElement('div', { style: {fontFamily:"'Playfair Display',serif",fontSize:"clamp(24px,3vw,40px)",fontWeight:700,color:GD,lineHeight:1}}, n)
+                  , React.createElement('div', { style: {fontSize:9,color:"rgba(11,40,24,.4)",textTransform:"uppercase",letterSpacing:".07em",marginTop:3}}, l)
+                )
+              ))
+            )
+          )
+        )
+
+        /* SERVICES */
+        , React.createElement('section', { id: "services", style: {padding:"64px 40px",background:GB,position:"relative",overflow:"hidden"}}
+          , React.createElement('img', { src: "/images/collection.jpg", style: {position:"absolute",right:"-2%",top:"50%",transform:"translateY(-50%)",height:"85%",width:"auto",opacity:0.13,pointerEvents:"none",zIndex:0}, alt: ""})
+          , React.createElement('img', { src: "/images/collection.jpg", style: {position:"absolute",right:-30,top:"50%",transform:"translateY(-50%)",height:"80%",opacity:0.06,pointerEvents:"none",zIndex:0,filter:"saturate(0.5)"}, alt: ""})
+          , React.createElement('div', { style: {display:"flex",alignItems:"center",gap:9,marginBottom:7}}, React.createElement('div', { style: {width:24,height:1,background:G}}), React.createElement('span', { style: {fontSize:9,letterSpacing:".14em",textTransform:"uppercase",color:G,fontWeight:600}}, t.svc_badge))
+          , React.createElement('h2', { style: {fontFamily:"'Playfair Display',serif",fontSize:"clamp(22px,3vw,36px)",fontWeight:700,color:GD,marginBottom:28,lineHeight:1.15}}, t.svc_h)
+          , React.createElement('div', { className: "g5", style: {display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:2}}
+            , ICONS.map((icon,i)=>(
+              React.createElement('div', { key: i, onClick: ()=>setSm(i), style: {background:"white",borderBottom:"3px solid transparent",boxShadow:"0 2px 8px rgba(11,40,24,.04)",transition:"all .3s",cursor:"pointer",overflow:"hidden",borderRadius:2},
+                onMouseEnter: e=>{e.currentTarget.style.transform="translateY(-4px)";e.currentTarget.style.borderBottomColor=G;e.currentTarget.style.boxShadow="0 14px 36px rgba(11,40,24,.1)";},
+                onMouseLeave: e=>{e.currentTarget.style.transform="translateY(0)";e.currentTarget.style.borderBottomColor="transparent";e.currentTarget.style.boxShadow="0 2px 8px rgba(11,40,24,.04)";}}
+                , React.createElement('div', { style: {height:100,overflow:"hidden",position:"relative",background:"#f0ede6"}}
+                  , React.createElement('img', { src: SVC_PHOTOS[i], alt: t.svc_names[i], style: {width:"100%",height:"100%",objectFit:"cover",transition:"transform .4s"},
+                    onError: e=>e.currentTarget.style.display="none",
+                    onMouseEnter: e=>e.currentTarget.style.transform="scale(1.08)",
+                    onMouseLeave: e=>e.currentTarget.style.transform="scale(1)"})
+                  , React.createElement('div', { style: {position:"absolute",inset:0,background:"linear-gradient(to bottom,transparent 30%,rgba(11,40,24,.4) 100%)"}})
+                  , React.createElement('div', { style: {position:"absolute",bottom:5,left:7,fontSize:16}}, icon)
+                )
+                , React.createElement('div', { style: {padding:"10px 11px 12px"}}
+                  , React.createElement('div', { style: {fontFamily:"'Playfair Display',serif",fontSize:11,fontWeight:700,color:GD,lineHeight:1.3,marginBottom:4}}, t.svc_names[i])
+                  , React.createElement('div', { style: {fontSize:9,color:G,fontWeight:600}}, "Learn more →"  )
+                )
+              )
+            ))
+          )
+        )
+
+        /* PROJECTS */
+        , React.createElement('section', { id: "projects", style: {padding:"64px 40px",background:"#FAFAF8",position:"relative",overflow:"hidden"}}
+          , React.createElement('img', { src: "/images/precision.jpg", style: {position:"absolute",right:"-2%",top:"50%",transform:"translateY(-50%)",height:"85%",width:"auto",opacity:0.12,pointerEvents:"none",zIndex:0,filter:"sepia(0.15)"}, alt: ""})
+          , React.createElement('img', { src: "/images/precision.jpg", style: {position:"absolute",right:-20,top:"10%",height:"75%",opacity:0.07,pointerEvents:"none",zIndex:0,filter:"sepia(0.3) saturate(0.7)"}, alt: ""})
+          , React.createElement('div', { style: {display:"flex",alignItems:"center",gap:9,marginBottom:7}}, React.createElement('div', { style: {width:24,height:1,background:G}}), React.createElement('span', { style: {fontSize:9,letterSpacing:".14em",textTransform:"uppercase",color:G,fontWeight:600}}, t.proj_badge))
+          , React.createElement('h2', { style: {fontFamily:"'Playfair Display',serif",fontSize:"clamp(22px,3vw,36px)",fontWeight:700,color:GD,marginBottom:28,lineHeight:1.15}}, t.proj_h)
+          , React.createElement('div', { className: "g2", style: {display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:12}}
+            , PROJECTS.map((p,i)=>(
+              React.createElement('div', { key: i, className: "card", onClick: ()=>setPm(p), style: {background:"white",border:"1px solid rgba(201,168,76,.14)",borderRadius:12,overflow:"hidden",cursor:"pointer"}}
+                , React.createElement('div', { style: {height:140,overflow:"hidden",position:"relative",background:"#f0ede6"}}
+                  , React.createElement('img', { src: p.photo, alt: p.title, style: {width:"100%",height:"100%",objectFit:"cover",transition:"transform .4s"}, onError: e=>e.currentTarget.style.display="none", onMouseEnter: e=>e.currentTarget.style.transform="scale(1.06)", onMouseLeave: e=>e.currentTarget.style.transform="scale(1)"})
+                  , React.createElement('div', { style: {position:"absolute",inset:0,background:"linear-gradient(to bottom,transparent 40%,rgba(11,40,24,.55) 100%)"}})
+                  , React.createElement('div', { style: {position:"absolute",bottom:7,left:10,display:"flex",gap:5}}
+                    , React.createElement('span', { style: {padding:"2px 6px",borderRadius:5,fontSize:9,fontWeight:700,background:FC[p.funder]||G,color:"white"}}, p.funder)
+                    , React.createElement('span', { style: {padding:"2px 6px",borderRadius:5,fontSize:9,fontWeight:700,background:p.status==="active"?"#22c55e":"rgba(255,255,255,.3)",color:"white"}}, p.status==="active"?"Active":"Done")
+                  )
+                )
+                , React.createElement('div', { style: {padding:"14px 16px"}}
+                  , React.createElement('div', { style: {display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}
+                    , React.createElement('div', { style: {display:"flex",gap:7,alignItems:"center"}}, React.createElement('span', { style: {fontSize:18}}, p.icon), React.createElement('span', { style: {fontSize:9,color:"#9CA3AF"}}, p.year, " · "  , p.tag))
+                    , React.createElement('span', { style: {fontSize:9,padding:"2px 7px",borderRadius:7,background:p.status==="active"?"rgba(34,197,94,.1)":"rgba(201,168,76,.1)",color:p.status==="active"?"#16a34a":G,fontWeight:700}}, p.status==="active"?t.status_active:t.status_done)
+                  )
+                  , React.createElement('h3', { style: {fontFamily:"'Playfair Display',serif",fontSize:12,fontWeight:700,color:GD,lineHeight:1.35}}, p.title)
+                )
+              )
+            ))
+          )
+        )
+
+        /* VACANCIES */
+        , React.createElement('section', { id: "vacancies", style: {padding:"64px 40px",background:GB,position:"relative",overflow:"hidden"}}
+          , React.createElement('img', { src: "/images/scene3d.jpg", style: {position:"absolute",right:"-2%",top:"50%",transform:"translateY(-50%)",height:"85%",width:"auto",opacity:0.09,pointerEvents:"none",zIndex:0}, alt: ""})
+          , React.createElement('div', { style: {display:"flex",alignItems:"center",gap:9,marginBottom:7}}, React.createElement('div', { style: {width:24,height:1,background:G}}), React.createElement('span', { style: {fontSize:9,letterSpacing:".14em",textTransform:"uppercase",color:G,fontWeight:600}}, t.vac_badge))
+          , React.createElement('h2', { style: {fontFamily:"'Playfair Display',serif",fontSize:"clamp(22px,3vw,36px)",fontWeight:700,color:GD,marginBottom:28}}, t.vac_h)
+          , React.createElement('div', { className: "g2", style: {display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:12}}
+            , VACANCIES.map((v,i)=>(
+              React.createElement('div', { key: i, className: "card", onClick: ()=>openV(v,i), style: {background:"white",border:"1px solid rgba(201,168,76,.14)",borderRadius:12,padding:20,cursor:"pointer"}}
+                , React.createElement('div', { style: {display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:9}}
+                  , React.createElement('h3', { style: {fontFamily:"'Playfair Display',serif",fontSize:13,fontWeight:700,color:GD,lineHeight:1.3,flex:1,marginRight:7}}, v.title)
+                  , React.createElement('span', { style: {flexShrink:0,padding:"2px 7px",background:"rgba(201,168,76,.08)",border:"1px solid rgba(201,168,76,.2)",borderRadius:7,fontSize:10,fontWeight:700,color:G}}, "👁 " , vv[`v${i}`]||0)
+                )
+                , v.reqs.slice(0,2).map((r,j)=>React.createElement('div', { key: j, style: {fontSize:10,color:"#6B7280",padding:"2px 0 2px 7px",borderLeft:"2px solid rgba(201,168,76,.3)",marginBottom:3}}, r))
+                , React.createElement('div', { style: {display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:9}}
+                  , React.createElement('span', { style: {padding:"2px 7px",background:GL,color:G,borderRadius:7,fontSize:9,fontWeight:600}}, "ICC · Tashkent"  )
+                  , React.createElement('span', { style: {fontSize:10,color:G,fontWeight:600}}, t.vac_cta)
+                )
+              )
+            ))
+          )
+        )
+
+        /* CONTACT */
+        , React.createElement('section', { id: "contact", style: {padding:"64px 40px",background:GD,position:"relative",overflow:"hidden"}}
+          , React.createElement('img', { src: "/images/glass_prism.jpg", style: {position:"absolute",right:"-2%",top:"50%",transform:"translateY(-50%)",height:"85%",width:"auto",opacity:0.09,pointerEvents:"none",zIndex:0,filter:"hue-rotate(160deg)"}, alt: ""})
+          , React.createElement('div', { style: {position:"absolute",inset:0,backgroundImage:"linear-gradient(rgba(201,168,76,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(201,168,76,.04) 1px,transparent 1px)",backgroundSize:"44px 44px"}})
+          , React.createElement('div', { style: {position:"relative",zIndex:1}}
+            , React.createElement('div', { style: {display:"flex",alignItems:"center",gap:9,marginBottom:7}}, React.createElement('div', { style: {width:24,height:1,background:G}}), React.createElement('span', { style: {fontSize:9,letterSpacing:".14em",textTransform:"uppercase",color:G,fontWeight:600}}, t.contact_badge))
+            , React.createElement('h2', { style: {fontFamily:"'Playfair Display',serif",fontSize:"clamp(22px,3vw,36px)",fontWeight:700,color:"white",marginBottom:24}}, t.contact_h)
+            , React.createElement('div', { className: "g2", style: {display:"grid",gridTemplateColumns:"1fr 1fr",gap:36}}
+              , React.createElement('div', {__self: this, __source: {fileName: _jsxFileName, lineNumber: 424}}
+                , [["📍","Address","29 Shivli str., Yunusabad, Tashkent"],["📞","Phone","+998 (55) 520 03 35"],["✉️","Email","info@inconsult.uz"],["🌐","Website","inconsult.uz"]].map(([icon,lbl,val],i)=>(
+                  React.createElement('div', { key: i, style: {display:"flex",gap:10,marginBottom:14}}
+                    , React.createElement('div', { style: {width:32,height:32,border:"1px solid rgba(201,168,76,.25)",borderRadius:7,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,flexShrink:0}}, icon)
+                    , React.createElement('div', {__self: this, __source: {fileName: _jsxFileName, lineNumber: 428}}, React.createElement('div', { style: {fontSize:8,textTransform:"uppercase",letterSpacing:".1em",color:"rgba(255,255,255,.3)",marginBottom:2}}, lbl), React.createElement('div', { style: {fontSize:11,color:"white"}}, val))
+                  )
+                ))
+                , React.createElement('a', { href: "https://t.me/indexconsulting", target: "_blank", style: {display:"inline-flex",alignItems:"center",gap:6,marginTop:6,padding:"9px 16px",background:"#2AABEE",color:"white",borderRadius:18,fontSize:11,fontWeight:500,textDecoration:"none"}}, "✈️ @indexconsulting" )
+              )
+              , React.createElement('div', { style: {background:"rgba(255,255,255,.04)",border:"1px solid rgba(255,255,255,.08)",borderRadius:11,padding:22}}
+                , React.createElement('div', { style: {fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,color:"white",marginBottom:14}}, t.contact_h)
+                , ["Name","Email"].map((lbl,i)=>(
+                  React.createElement('div', { key: i, style: {marginBottom:9}}
+                    , React.createElement('div', { style: {fontSize:8,textTransform:"uppercase",letterSpacing:".08em",color:"rgba(255,255,255,.3)",marginBottom:4}}, lbl)
+                    , React.createElement('input', { type: ["text","email"][i], style: {width:"100%",background:"rgba(255,255,255,.06)",border:"1px solid rgba(255,255,255,.1)",borderRadius:7,padding:"8px 11px",color:"white",fontSize:11,fontFamily:"'DM Sans',sans-serif",outline:"none"}})
+                  )
+                ))
+                , React.createElement('button', { onClick: ()=>setCm(true), style: {width:"100%",marginTop:5,padding:"10px",background:G,color:GD,border:"none",borderRadius:7,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}, t.contact_h, " →" )
+              )
+            )
+          )
+        )
+      )
+
+      /* ── ABOUT ── */
+      , view==="about"&&React.createElement('div', { style: {paddingTop:64,minHeight:"100vh",background:"#FAFAF8"}}
+        , React.createElement('div', { style: {padding:"52px 40px 40px",background:`linear-gradient(135deg,${GD} 0%,#132E1E 100%)`,position:"relative",overflow:"hidden"}}
+          , React.createElement('img', { src: "/images/about_obj.jpg", style: {position:"absolute",right:0,bottom:0,height:"100%",width:"auto",opacity:0.18,pointerEvents:"none",WebkitMaskImage:"linear-gradient(to left,rgba(0,0,0,.8) 15%,transparent 70%)",maskImage:"linear-gradient(to left,rgba(0,0,0,.8) 15%,transparent 70%)"}, alt: ""})
+
+          , React.createElement('div', { style: {position:"relative",zIndex:1}}
+            , React.createElement('div', { style: {display:"flex",alignItems:"center",gap:9,marginBottom:9}}, React.createElement('div', { style: {width:24,height:1,background:G}}), React.createElement('span', { style: {fontSize:9,letterSpacing:".14em",textTransform:"uppercase",color:G,fontWeight:600}}, t.about_badge))
+            , React.createElement('h1', { style: {fontFamily:"'Playfair Display',serif",fontSize:"clamp(26px,4vw,48px)",fontWeight:700,color:"white",lineHeight:1.1,marginBottom:11}}, "Index Consulting" , React.createElement('br', {__self: this, __source: {fileName: _jsxFileName, lineNumber: 455}}), React.createElement('em', { style: {color:G,fontWeight:400}}, "Company (ICC)" ))
+            , React.createElement('p', { style: {fontSize:12,lineHeight:1.8,color:"rgba(255,255,255,.5)",maxWidth:500,marginBottom:20}}, t.hero_sub)
+            , React.createElement('div', { style: {display:"flex",gap:7,flexWrap:"wrap"}}
+              , [{icon:"🌐",lbl:"inconsult.uz",href:"https://inconsult.uz"},{icon:"✈️",lbl:"Telegram",href:"https://t.me/indexconsulting"},{icon:"✉️",lbl:"info@inconsult.uz",href:"mailto:info@inconsult.uz"}].map(({icon,lbl,href},i)=>(
+                React.createElement('a', { key: i, href: href, target: "_blank", style: {display:"flex",alignItems:"center",gap:5,padding:"7px 12px",background:"rgba(255,255,255,.08)",border:"1px solid rgba(255,255,255,.15)",borderRadius:18,color:"white",fontSize:10,fontWeight:500,textDecoration:"none"}}, icon, " " , lbl)
+              ))
+            )
+          )
+        )
+        , React.createElement('div', { style: {padding:"48px 40px"}}
+          , React.createElement('div', { className: "g2", style: {display:"grid",gridTemplateColumns:"1fr 1fr",gap:44}}
+            , React.createElement('div', {__self: this, __source: {fileName: _jsxFileName, lineNumber: 466}}
+              , React.createElement('div', { style: {fontFamily:"'Playfair Display',serif",fontSize:"clamp(18px,2.5vw,28px)",fontWeight:700,color:GD,marginBottom:12}}, "Index Consulting Company"  )
+              , React.createElement('p', { style: {fontSize:12,lineHeight:1.9,color:"#6B7280",marginBottom:16}}, "ICC, established in 2018, works across energy, water supply, environmental management, PPP and ESG consulting for ADB, World Bank, EBRD and other IFI-financed projects in Central Asia."                          )
+              , React.createElement('div', { style: {display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:14}}
+                , ABOUT_PHOTOS.slice(0,2).map((url,i)=>(
+                  React.createElement('div', { key: i, style: {borderRadius:9,overflow:"hidden",height:i===0?150:120,position:"relative",background:"#e5e7eb"}}
+                    , React.createElement('img', { src: url, alt: ["ICC Office & Team","Field Work"][i], style: {width:"100%",height:"100%",objectFit:"cover",transition:"transform .4s"}, onError: e=>e.currentTarget.style.display="none", onMouseEnter: e=>e.currentTarget.style.transform="scale(1.05)", onMouseLeave: e=>e.currentTarget.style.transform="scale(1)"})
+                    , React.createElement('div', { style: {position:"absolute",inset:0,background:"linear-gradient(to top,rgba(11,40,24,.5) 0%,transparent 55%)"}})
+                    , React.createElement('div', { style: {position:"absolute",bottom:6,left:8,fontSize:8,color:"rgba(255,255,255,.85)",fontWeight:600,letterSpacing:".05em"}}, ["ICC Office & Team","Field Work"][i])
+                  )
+                ))
+              )
+              , React.createElement('div', { style: {borderRadius:9,overflow:"hidden",height:110,position:"relative",background:"#e5e7eb",marginBottom:16}}
+                , React.createElement('img', { src: ABOUT_PHOTOS[2], alt: "ICC Events" , style: {width:"100%",height:"100%",objectFit:"cover",objectPosition:"center 40%",transition:"transform .4s"}, onError: e=>e.currentTarget.style.display="none", onMouseEnter: e=>e.currentTarget.style.transform="scale(1.03)", onMouseLeave: e=>e.currentTarget.style.transform="scale(1)"})
+                , React.createElement('div', { style: {position:"absolute",inset:0,background:"linear-gradient(to top,rgba(11,40,24,.55) 0%,transparent 55%)"}})
+                , React.createElement('div', { style: {position:"absolute",bottom:6,left:8,fontSize:8,color:"rgba(255,255,255,.85)",fontWeight:600,letterSpacing:".05em"}}, "ICC at PPP Roundtable & Industry Events"      )
+              )
+              , React.createElement('div', { style: {padding:"16px 20px",background:GD,borderRadius:11}}
+                , React.createElement('div', { style: {fontSize:9,textTransform:"uppercase",letterSpacing:".12em",color:G,marginBottom:7,fontWeight:600}}, t.mission_label)
+                , React.createElement('div', { style: {fontFamily:"'Playfair Display',serif",fontSize:13,color:"white",lineHeight:1.7,fontStyle:"italic"}}, "\"Our primary destination is to be listed as the most trusted consultancy partner of the Client, solidified by the relentless support to the Client at all times.\""                          )
+              )
+            )
+            , React.createElement('div', {__self: this, __source: {fileName: _jsxFileName, lineNumber: 488}}
+              , React.createElement('div', { style: {display:"grid",gridTemplateColumns:"1fr 1fr",gap:9,marginBottom:18}}
+                , [["7+","Years Active"],["10+","Active Projects"],["11+","IFI Partners"],["10","Service Areas"]].map(([n,l],i)=>(
+                  React.createElement('div', { key: i, style: {padding:"14px",background:"white",border:"1px solid rgba(201,168,76,.2)",borderRadius:10,textAlign:"center",transition:"all .3s"}, onMouseEnter: e=>{e.currentTarget.style.borderColor=G;e.currentTarget.style.transform="translateY(-3px)";}, onMouseLeave: e=>{e.currentTarget.style.borderColor="rgba(201,168,76,.2)";e.currentTarget.style.transform="translateY(0)";}}
+                    , React.createElement('div', { style: {fontFamily:"'Playfair Display',serif",fontSize:26,fontWeight:700,color:GD}}, n.replace("+",""), React.createElement('span', { style: {color:G}}, n.includes("+")?"+":""))
+                    , React.createElement('div', { style: {fontSize:9,color:"#9CA3AF",textTransform:"uppercase",letterSpacing:".07em",marginTop:3}}, l)
+                  )
+                ))
+              )
+              , React.createElement('div', { style: {marginBottom:16}}
+                , React.createElement('div', { style: {fontSize:9,textTransform:"uppercase",letterSpacing:".1em",color:G,fontWeight:700,marginBottom:10}}, "IFI Partners" )
+                , React.createElement('div', { style: {display:"flex",gap:6,flexWrap:"wrap"}}
+                  , ["ADB","World Bank","EBRD","KfW","IsDB","OPEC Fund","Proparco","AFD","IFC"].map((p,i)=>(
+                    React.createElement('span', { key: i, style: {padding:"3px 8px",background:GB,border:"1px solid rgba(201,168,76,.2)",borderRadius:6,fontSize:10,color:GD,fontWeight:600}}, p)
+                  ))
+                )
+              )
+              , React.createElement('div', {__self: this, __source: {fileName: _jsxFileName, lineNumber: 505}}
+                , React.createElement('div', { style: {fontSize:9,textTransform:"uppercase",letterSpacing:".1em",color:G,fontWeight:700,marginBottom:10}}, "Services")
+                , React.createElement('div', { style: {display:"flex",gap:5,flexWrap:"wrap"}}
+                  , ICONS.map((icon,i)=>(
+                    React.createElement('div', { key: i, onClick: ()=>setSm(i), style: {display:"flex",alignItems:"center",gap:4,padding:"4px 9px",background:"white",border:"1px solid rgba(201,168,76,.15)",borderRadius:6,fontSize:10,cursor:"pointer",transition:"all .2s"}, onMouseEnter: e=>{e.currentTarget.style.borderColor=G;e.currentTarget.style.background=GL;}, onMouseLeave: e=>{e.currentTarget.style.borderColor="rgba(201,168,76,.15)";e.currentTarget.style.background="white";}}
+                      , icon, " " , t.svc_names[i]
+                    )
+                  ))
+                )
+              )
+            )
+          )
+        )
+      )
+
+      /* ── TENDERS ── */
+
+      /* TEAM */
+      , React.createElement('div', { style: {padding:"48px 40px 36px",background:"#FAFAF8"}}
+        , React.createElement('div', { style: {display:"flex",alignItems:"center",gap:9,marginBottom:7}}
+          , React.createElement('div', { style: {width:24,height:1,background:G}})
+          , React.createElement('span', { style: {fontSize:9,letterSpacing:".14em",textTransform:"uppercase",color:G,fontWeight:600}}, "Our People" )
+        )
+        , React.createElement('h2', { style: {fontFamily:"'Playfair Display',serif",fontSize:"clamp(22px,3vw,34px)",fontWeight:700,color:GD,marginBottom:8}}, "Meet the Team"  )
+        , React.createElement('p', { style: {fontSize:12,color:"#6B7280",marginBottom:28,maxWidth:480}}, "Experienced engineers, economists and analysts for IFI-financed projects across Central Asia."          )
+        , React.createElement('div', { style: {display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(185px,1fr))",gap:16}}
+          , [
+            {name:"Bobur Yusupov",role:"Director General",area:"PPP & Infrastructure",exp:"15+ yrs",emoji:"👔"},
+            {name:"Aziza Karimova",role:"Lead Economist",area:"ADB / World Bank",exp:"12 yrs",emoji:"📊"},
+            {name:"Sardor Nazarov",role:"GIS Specialist",area:"Remote Sensing",exp:"8 yrs",emoji:"🗺"},
+            {name:"Nilufar Rashidova",role:"Environmental Expert",area:"ESG & Environment",exp:"10 yrs",emoji:"🌱"},
+            {name:"Jasur Tashkentov",role:"Energy Analyst",area:"Renewables & Energy",exp:"7 yrs",emoji:"⚡"},
+            {name:"Kamola Mirzaeva",role:"HR & Operations",area:"Recruitment & Admin",exp:"6 yrs",emoji:"👥"},
+          ].map((p,i)=>(
+            React.createElement('div', { key: i, style: {background:"white",borderRadius:14,padding:"20px 16px",boxShadow:"0 2px 16px rgba(11,40,24,.07)",borderTop:"3px solid "+G,display:"flex",flexDirection:"column",gap:3}}
+              , React.createElement('div', { style: {fontSize:30,marginBottom:4}}, p.emoji)
+              , React.createElement('div', { style: {fontSize:13,fontWeight:700,color:GD,fontFamily:"'Playfair Display',serif",lineHeight:1.2}}, p.name)
+              , React.createElement('div', { style: {fontSize:11,fontWeight:600,color:G,marginTop:2}}, p.role)
+              , React.createElement('div', { style: {fontSize:10,color:"#9CA3AF"}}, p.area)
+              , React.createElement('div', { style: {fontSize:9,color:"rgba(11,40,24,.3)",marginTop:6,paddingTop:6,borderTop:"1px solid rgba(11,40,24,.06)"}}, p.exp, " experience" )
+            )
+          ))
+        )
+      )
+
+      , view==="tenders"&&React.createElement('div', { style: {paddingTop:64,minHeight:"100vh",background:"#FAFAF8"}}
+      , React.createElement('img', { src: "/images/circuits.jpg", style: {position:"absolute",right:"-2%",top:"50%",transform:"translateY(-50%)",height:"85%",width:"auto",opacity:0.11,pointerEvents:"none",zIndex:0}, alt: ""})
+        , React.createElement('div', { style: {padding:"48px 40px 36px",background:`linear-gradient(135deg,${GD} 0%,#0E2B1A 100%)`,position:"relative",overflow:"hidden"}}
+          , React.createElement('div', { style: {position:"absolute",right:-60,top:"50%",transform:"translateY(-50%)",width:400,height:400,borderRadius:"50%",background:"radial-gradient(circle,rgba(201,168,76,.1) 0%,transparent 70%)"}})
+          , React.createElement('div', { style: {position:"relative",zIndex:1}}
+            , React.createElement('div', { style: {display:"flex",alignItems:"center",gap:9,marginBottom:9}}, React.createElement('div', { style: {width:24,height:1,background:G}}), React.createElement('span', { style: {fontSize:9,letterSpacing:".14em",textTransform:"uppercase",color:G,fontWeight:600}}, t.tenders_badge))
+            , React.createElement('h1', { style: {fontFamily:"'Playfair Display',serif",fontSize:"clamp(24px,4vw,44px)",fontWeight:700,color:"white",lineHeight:1.1,marginBottom:9}}, t.tenders_h)
+            , React.createElement('p', { style: {fontSize:12,lineHeight:1.75,color:"rgba(255,255,255,.45)",maxWidth:500,marginBottom:20}}, t.tenders_sub)
+            , React.createElement('div', { style: {display:"flex",gap:7,flexWrap:"wrap"}}
+              , [{n:"ADB",href:"https://www.adb.org/projects/tenders",c:"#e31837"},{n:"World Bank",href:"https://projects.worldbank.org",c:"#009688"},{n:"EBRD",href:"https://www.ebrd.com/work-with-us/procurement/ppo.html",c:"#003f87"},{n:"UNGM",href:"https://www.ungm.org",c:"#1a7a4a"}].map(({n,href,c})=>(
+                React.createElement('a', { key: n, href: href, target: "_blank", style: {display:"flex",alignItems:"center",gap:4,padding:"8px 12px",background:`${c}22`,border:`1px solid ${c}44`,borderRadius:7,color:"white",fontSize:10,fontWeight:600,textDecoration:"none"}}, React.createElement('span', { style: {width:5,height:5,borderRadius:"50%",background:c,flexShrink:0}}), n, " ↗" )
+              ))
+            )
+          )
+        )
+        , React.createElement('div', { style: {padding:"44px 40px",textAlign:"center"}}
+          , React.createElement('div', { style: {fontSize:52,marginBottom:12,animation:"fl 3s ease-in-out infinite"}}, "📋")
+          , React.createElement('div', { style: {fontFamily:"'Playfair Display',serif",fontSize:20,color:GD,marginBottom:7}}, t.tenders_h)
+          , React.createElement('p', { style: {fontSize:12,color:"#9CA3AF",maxWidth:380,margin:"0 auto 22px",lineHeight:1.75}}, t.tenders_sub)
+          , React.createElement('div', { style: {display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,maxWidth:640,margin:"0 auto",textAlign:"left"}}
+            , [{icon:"🌏",label:"ADB Procurement",href:"https://www.adb.org/projects/tenders",c:"#e31837"},{icon:"🏦",label:"World Bank",href:"https://projects.worldbank.org",c:"#009688"},{icon:"🇪🇺",label:"EBRD PPO",href:"https://www.ebrd.com/work-with-us/procurement/ppo.html",c:"#003f87"},{icon:"🌐",label:"UNGM",href:"https://www.ungm.org",c:"#1a7a4a"},{icon:"📰",label:"TED EU",href:"https://ted.europa.eu",c:"#003399"},{icon:"🤖",label:"AI Search",href:null,c:G}].map(({icon,label,href,c},i)=>(
+              href
+                ?React.createElement('a', { key: i, href: href, target: "_blank", style: {padding:"13px",background:"white",border:"1px solid rgba(201,168,76,.15)",borderRadius:9,borderLeft:`4px solid ${c}`,display:"block",textDecoration:"none",transition:"all .25s"}, onMouseEnter: e=>e.currentTarget.style.transform="translateY(-2px)", onMouseLeave: e=>e.currentTarget.style.transform="translateY(0)"}
+                    , React.createElement('div', { style: {fontSize:18,marginBottom:5}}, icon)
+                    , React.createElement('div', { style: {fontFamily:"'Playfair Display',serif",fontSize:11,fontWeight:700,color:GD}}, label, " ↗" )
+                  )
+                :React.createElement('div', { key: i, style: {padding:"13px",background:GL,border:"1px solid rgba(201,168,76,.3)",borderRadius:9,borderLeft:`4px solid ${c}`,cursor:"pointer"}}
+                    , React.createElement('div', { style: {fontSize:18,marginBottom:5}}, icon)
+                    , React.createElement('div', { style: {fontFamily:"'Playfair Display',serif",fontSize:11,fontWeight:700,color:GD}}, label)
+                  )
+            ))
+          )
+        )
+      )
+
+      /* ── PORTAL ── */
+      , view==="portal"&&React.createElement(AIPortal, { go: go, t: t, lang: lang})
+
+      /* ── FOOTER ── */
+      , React.createElement('footer', { style: {background:GD}}
+        , React.createElement('div', { style: {height:2,background:`linear-gradient(90deg,transparent,${G},transparent)`}})
+        , React.createElement('div', { style: {padding:"20px 40px",display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:9}}
+          , React.createElement('div', { style: {fontFamily:"'Playfair Display',serif",fontSize:13,fontWeight:700,color:"white"}}, "Index " , React.createElement('span', { style: {color:G}}, "Consulting"), " Company" )
+          , React.createElement('div', { style: {display:"flex",gap:12,flexWrap:"wrap"}}
+            , [t.nav_home,t.nav_about,t.nav_tenders,t.nav_ai].map((l,i)=>(
+              React.createElement('button', { key: i, onClick: ()=>go(["home","about","tenders","portal"][i]), style: {fontSize:9,color:"rgba(255,255,255,.3)",background:"none",border:"none",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",letterSpacing:".06em",textTransform:"uppercase",padding:0}}, l)
+            ))
+          )
+          , React.createElement('div', { style: {fontSize:9,color:"rgba(255,255,255,.18)"}}, t.footer_copy)
+        )
+      )
+
+      /* ── SERVICE MODAL ── */
+      , sm!==null&&React.createElement('div', { className: "ov", onClick: e=>{if(e.target===e.currentTarget)setSm(null);}}
+        , React.createElement('div', { className: "mb", style: {maxWidth:520}}
+          , React.createElement('div', { style: {padding:26}}
+            , React.createElement('div', { style: {display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:16}}
+              , React.createElement('div', {__self: this, __source: {fileName: _jsxFileName, lineNumber: 607}}, React.createElement('div', { style: {fontSize:38,marginBottom:7}}, ICONS[sm]), React.createElement('div', { style: {fontSize:9,textTransform:"uppercase",letterSpacing:".1em",color:G,fontWeight:700,marginBottom:4}}, "Service Area · ICC"   ), React.createElement('h2', { style: {fontFamily:"'Playfair Display',serif",fontSize:19,fontWeight:700,color:GD,lineHeight:1.3}}, t.svc_names[sm]))
+              , React.createElement('button', { onClick: ()=>setSm(null), style: {background:"none",border:"none",fontSize:20,cursor:"pointer",color:"#9CA3AF",marginLeft:10}}, "✕")
+            )
+            , React.createElement('p', { style: {fontSize:12,lineHeight:1.85,color:"#6B7280",marginBottom:18}}, DESCS[sm])
+            , React.createElement('div', { style: {padding:"11px 13px",background:GL,border:"1px solid rgba(201,168,76,.3)",borderRadius:8,marginBottom:18}}, React.createElement('div', { style: {fontSize:10,fontWeight:700,color:GD,marginBottom:2}}, "🌐 View on inconsult.uz"   ), React.createElement('div', { style: {fontSize:10,color:"#6B7280"}}, "Detailed information and project examples on the ICC website."        ))
+            , React.createElement('div', { style: {display:"flex",gap:7}}
+              , React.createElement('a', { href: LINKS[sm], target: "_blank", style: {flex:1,padding:"11px 0",background:GD,color:"white",borderRadius:7,fontSize:11,fontWeight:600,display:"flex",alignItems:"center",justifyContent:"center",textDecoration:"none",transition:"all .2s"}, onMouseEnter: e=>{e.currentTarget.style.background=G;e.currentTarget.style.color=GD;}, onMouseLeave: e=>{e.currentTarget.style.background=GD;e.currentTarget.style.color="white";}}, "View on inconsult.uz ↗"   )
+              , React.createElement('button', { onClick: ()=>{setSm(null);setCm(true);}, style: {padding:"11px 13px",background:"none",border:`1px solid ${G}`,borderRadius:7,fontSize:11,fontWeight:600,color:G,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}, "Contact Us" )
+              , React.createElement('button', { onClick: ()=>setSm(null), style: {padding:"11px 13px",background:"none",border:"1px solid rgba(201,168,76,.2)",borderRadius:7,fontSize:11,color:"#9CA3AF",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}, "✕")
+            )
+          )
+        )
+      )
+
+      /* ── PROJECT MODAL ── */
+      , pm&&React.createElement('div', { className: "ov", onClick: e=>{if(e.target===e.currentTarget)setPm(null);}}
+        , React.createElement('div', { className: "mb", style: {maxWidth:540}}
+          , React.createElement('div', { style: {height:180,overflow:"hidden",position:"relative",borderRadius:"16px 16px 0 0"}}
+            , React.createElement('img', { src: pm.photo, alt: pm.title, style: {width:"100%",height:"100%",objectFit:"cover"}, onError: e=>e.currentTarget.style.display="none"})
+            , React.createElement('div', { style: {position:"absolute",inset:0,background:"linear-gradient(to bottom,transparent 30%,rgba(11,40,24,.7) 100%)"}})
+            , React.createElement('div', { style: {position:"absolute",bottom:12,left:16,display:"flex",gap:6}}
+              , React.createElement('span', { style: {padding:"2px 8px",borderRadius:6,fontSize:10,fontWeight:700,background:FC[pm.funder]||G,color:"white"}}, pm.funder)
+              , React.createElement('span', { style: {padding:"2px 8px",borderRadius:6,fontSize:10,fontWeight:700,background:pm.status==="active"?"#22c55e":"rgba(255,255,255,.3)",color:"white"}}, pm.status==="active"?"Active":"Completed")
+            )
+          )
+          , React.createElement('div', { style: {padding:24}}
+            , React.createElement('div', { style: {display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:14}}
+              , React.createElement('h2', { style: {fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:GD,lineHeight:1.35,flex:1,marginRight:10}}, pm.title)
+              , React.createElement('button', { onClick: ()=>setPm(null), style: {background:"none",border:"none",fontSize:20,cursor:"pointer",color:"#9CA3AF",flexShrink:0}}, "✕")
+            )
+            , React.createElement('div', { style: {display:"grid",gridTemplateColumns:"1fr 1fr",gap:7,marginBottom:16}}
+              , [["🏛 Funder",pm.funder],["📍 Location",pm.country||"Uzbekistan"],["📅 Period",pm.year],["🏷 Sector",pm.tag]].map(([lbl,val],i)=>(
+                React.createElement('div', { key: i, style: {padding:"8px 11px",background:"#FAFAF8",borderRadius:7}}, React.createElement('div', { style: {fontSize:8,color:"#9CA3AF",marginBottom:2}}, lbl), React.createElement('div', { style: {fontSize:11,fontWeight:600,color:GD}}, val))
+              ))
+            )
+            , React.createElement('div', { style: {marginBottom:16}}, React.createElement('div', { style: {fontSize:9,textTransform:"uppercase",letterSpacing:".08em",color:G,fontWeight:700,marginBottom:7}}, "Project Description" ), React.createElement('p', { style: {fontSize:11,color:"#374151",lineHeight:1.8}}, pm.desc))
+            , React.createElement('div', { style: {padding:"10px 13px",background:GL,border:"1px solid rgba(201,168,76,.3)",borderRadius:8,marginBottom:16}}, React.createElement('div', { style: {fontSize:10,fontWeight:600,color:GD,marginBottom:2}}, "📋 ICC Role"  ), React.createElement('div', { style: {fontSize:10,color:"#6B7280"}}, "Index Consulting Company provides consulting, supervision and advisory services on this "           , pm.funder, "-financed project." ))
+            , React.createElement('div', { style: {display:"flex",gap:7}}
+              , React.createElement('a', { href: "https://inconsult.uz/projects-by-sector", target: "_blank", style: {flex:1,padding:"11px 0",background:GD,color:"white",borderRadius:7,fontSize:11,fontWeight:600,display:"flex",alignItems:"center",justifyContent:"center",textDecoration:"none",transition:"all .2s"}, onMouseEnter: e=>{e.currentTarget.style.background=G;e.currentTarget.style.color=GD;}, onMouseLeave: e=>{e.currentTarget.style.background=GD;e.currentTarget.style.color="white";}}, "View All Projects ↗"   )
+              , React.createElement('button', { onClick: ()=>{setPm(null);setCm(true);}, style: {padding:"11px 13px",background:"none",border:`1px solid ${G}`,borderRadius:7,fontSize:11,fontWeight:600,color:G,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}, "Contact ICC" )
+              , React.createElement('button', { onClick: ()=>setPm(null), style: {padding:"11px 13px",background:"none",border:"1px solid rgba(201,168,76,.2)",borderRadius:7,fontSize:11,color:"#9CA3AF",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}, "✕")
+            )
+          )
+        )
+      )
+
+      /* ── VACANCY MODAL ── */
+      , vm&&React.createElement('div', { className: "ov", onClick: e=>{if(e.target===e.currentTarget){setVm(null);setCs("form");}}}
+        , React.createElement('div', { className: "mb", style: {maxWidth:540}}
+          , cs==="success"?(
+            React.createElement('div', { style: {padding:38,textAlign:"center"}}
+              , React.createElement('div', { style: {fontSize:44,marginBottom:11}}, "✅")
+              , React.createElement('div', { style: {fontFamily:"'Playfair Display',serif",fontSize:20,fontWeight:700,color:GD,marginBottom:6}}, "Application Received!" )
+              , React.createElement('p', { style: {fontSize:11,color:"#6B7280",lineHeight:1.7,marginBottom:20}}, "Thank you for applying to "     , React.createElement('strong', {__self: this, __source: {fileName: _jsxFileName, lineNumber: 660}}, vm.title), ". ICC HR will contact you within 3–5 business days."         )
+              , React.createElement('button', { onClick: ()=>{setVm(null);setCs("form");}, style: {padding:"10px 24px",background:GD,color:"white",border:"none",borderRadius:7,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}, "Close")
+            )
+          ):(
+            React.createElement('div', { style: {padding:22}}
+              , React.createElement('div', { style: {display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:14}}
+                , React.createElement('div', {__self: this, __source: {fileName: _jsxFileName, lineNumber: 666}}
+                  , React.createElement('div', { style: {fontSize:8,textTransform:"uppercase",letterSpacing:".1em",color:G,fontWeight:700,marginBottom:3}}, "Open Position · ICC Tashkent"    )
+                  , React.createElement('h2', { style: {fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,color:GD,lineHeight:1.3}}, vm.title)
+                  , React.createElement('div', { style: {display:"flex",gap:6,marginTop:6}}
+                    , React.createElement('span', { style: {padding:"2px 7px",background:GL,color:G,borderRadius:6,fontSize:9,fontWeight:600}}, "📍 Tashkent" )
+                    , React.createElement('span', { style: {padding:"2px 7px",background:"rgba(34,197,94,.08)",color:"#16a34a",border:"1px solid rgba(34,197,94,.2)",borderRadius:6,fontSize:9,fontWeight:600}}, "● Hiring Now"  )
+                    , React.createElement('span', { style: {padding:"2px 7px",background:"rgba(10,22,40,.06)",color:"#6B7280",borderRadius:6,fontSize:9}}, "👁 " , vv[vm.key]||0, " views" )
+                  )
+                )
+                , React.createElement('button', { onClick: ()=>{setVm(null);setCs("form");}, style: {background:"none",border:"none",fontSize:20,cursor:"pointer",color:"#9CA3AF",flexShrink:0}}, "✕")
+              )
+              , React.createElement('div', { style: {background:"#FAFAF8",borderRadius:8,padding:12,marginBottom:14}}
+                , React.createElement('div', { style: {fontSize:9,textTransform:"uppercase",letterSpacing:".08em",color:G,fontWeight:700,marginBottom:7}}, "Requirements")
+                , vm.reqs.map((r,j)=>React.createElement('div', { key: j, style: {fontSize:10,color:"#374151",padding:"3px 0 3px 8px",borderLeft:"2px solid rgba(201,168,76,.35)",marginBottom:3,lineHeight:1.55}}, r))
+              )
+              , React.createElement('div', { style: {borderTop:"1px solid rgba(201,168,76,.15)",marginBottom:14,paddingTop:14}}
+                , React.createElement('div', { style: {fontSize:9,letterSpacing:".1em",textTransform:"uppercase",color:G,fontWeight:600,marginBottom:10}}, "Apply Now" )
+                , React.createElement('div', { style: {display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}
+                  , [["Full Name *","name","text"],["Email *","email","email"],["Phone","phone","tel"]].map(([lbl,key,type],i)=>(
+                    React.createElement('div', { key: i, style: {gridColumn:i===0?"1/-1":"auto"}}
+                      , React.createElement('div', { style: {fontSize:8,textTransform:"uppercase",letterSpacing:".07em",color:"#9CA3AF",marginBottom:3}}, lbl)
+                      , React.createElement('input', { type: type, value: cf[key], onChange: e=>setCf(f=>({...f,[key]:e.target.value})), style: {width:"100%",border:"1px solid rgba(201,168,76,.25)",borderRadius:6,padding:"8px 11px",fontSize:11,fontFamily:"'DM Sans',sans-serif",color:GD,outline:"none"}, onFocus: e=>e.currentTarget.style.borderColor=G, onBlur: e=>e.currentTarget.style.borderColor="rgba(201,168,76,.25)"})
+                    )
+                  ))
+                )
+                , React.createElement('div', { style: {marginTop:8}}
+                  , React.createElement('div', { style: {fontSize:8,textTransform:"uppercase",letterSpacing:".07em",color:"#9CA3AF",marginBottom:3}}, "Cover Letter" )
+                  , React.createElement('textarea', { rows: 3, value: cf.msg, onChange: e=>setCf(f=>({...f,msg:e.target.value})), style: {width:"100%",border:"1px solid rgba(201,168,76,.25)",borderRadius:6,padding:"8px 11px",fontSize:11,fontFamily:"'DM Sans',sans-serif",color:GD,resize:"vertical",outline:"none"}, onFocus: e=>e.currentTarget.style.borderColor=G, onBlur: e=>e.currentTarget.style.borderColor="rgba(201,168,76,.25)"})
+                )
+              )
+              , React.createElement('div', { style: {display:"flex",gap:7}}
+                , React.createElement('button', { onClick: ()=>{if(cf.name&&cf.email)setCs("success");}, disabled: !cf.name||!cf.email, style: {flex:1,padding:"11px 0",background:cf.name&&cf.email?GD:"#e5e7eb",color:cf.name&&cf.email?"white":"#9CA3AF",border:"none",borderRadius:7,fontSize:11,fontWeight:600,cursor:cf.name&&cf.email?"pointer":"default",fontFamily:"'DM Sans',sans-serif"}}, "Submit Application →"  )
+                , React.createElement('a', { href: "mailto:info@inconsult.uz?subject=Application", style: {padding:"11px 13px",background:"none",border:"1px solid rgba(201,168,76,.3)",borderRadius:7,fontSize:10,color:G,fontWeight:600,display:"flex",alignItems:"center",fontFamily:"'DM Sans',sans-serif"}}, "✉️ Email" )
+              )
+            )
+          )
+        )
+      )
+
+      /* ── CONTACT MODAL ── */
+      , cm&&React.createElement('div', { className: "ov", onClick: e=>{if(e.target===e.currentTarget)setCm(false);}}
+        , React.createElement('div', { className: "mb", style: {maxWidth:460}}
+          , React.createElement('div', { style: {padding:24}}
+            , React.createElement('div', { style: {display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}
+              , React.createElement('div', { style: {fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:GD}}, t.contact_h)
+              , React.createElement('button', { onClick: ()=>setCm(false), style: {background:"none",border:"none",fontSize:20,cursor:"pointer",color:"#9CA3AF"}}, "✕")
+            )
+            , ["Name","Email","Message"].map((lbl,i)=>(
+              React.createElement('div', { key: i, style: {marginBottom:11}}
+                , React.createElement('div', { style: {fontSize:8,textTransform:"uppercase",letterSpacing:".08em",color:"#9CA3AF",marginBottom:4}}, lbl)
+                , i===2?React.createElement('textarea', { rows: 4, style: {width:"100%",border:"1px solid rgba(201,168,76,.25)",borderRadius:7,padding:"8px 11px",fontSize:11,fontFamily:"'DM Sans',sans-serif",color:GD,resize:"vertical",outline:"none"}}):React.createElement('input', { type: ["text","email"][i], style: {width:"100%",border:"1px solid rgba(201,168,76,.25)",borderRadius:7,padding:"8px 11px",fontSize:11,fontFamily:"'DM Sans',sans-serif",color:GD,outline:"none"}})
+              )
+            ))
+            , React.createElement('div', { style: {display:"flex",gap:7,marginTop:5}}
+              , React.createElement('button', { style: {flex:1,padding:"11px 0",background:GD,color:"white",border:"none",borderRadius:7,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}, onClick: ()=>setCm(false)}, t.contact_h, " →" )
+              , React.createElement('button', { onClick: ()=>setCm(false), style: {padding:"11px 14px",background:"none",border:"1px solid rgba(201,168,76,.25)",borderRadius:7,fontSize:11,color:"#6B7280",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}, "Close")
+            )
+          )
+        )
+      )
+    )
+  );
+}
+
+
+
+
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(React.createElement(App));
+  </script>
+</body>
+</html>
